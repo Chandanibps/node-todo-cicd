@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone Code') {
+            steps {
+                echo 'Code clone is successful'
+                git url:"https://github.com/Chandanibps/node-todo-cicd.git", branch: "master"
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Build is successful'
+                sh "docker build -t node-cicd-app ."
+            }
+        }
+
+        stage('Push') {
+            steps {
+                echo 'Push to Docker Hub is successful'
+                withCredentials([usernamePassword(credentialsId: "dockerhub", usernameVariable: "dockerhubuser", passwordVariable: "dockerhubpass")]){
+                sh "docker tag node-cicd-app ${env.dockerhubuser}/node-cicd-app:latest"
+                sh "docker login -u ${env.dockerhubuser} -p ${env.dockerhubpass}"
+                sh "docker push ${env.dockerhubuser}/node-cicd-app:latest"
+                    
+                } 
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploy is successful'
+                //sh "docker run -d -p 8000:8000 chandanibps/node-cicd-app:latest"
+                sh "docker-compose down && docker-compose up -d"
+            }
+        }
+    }
+}
